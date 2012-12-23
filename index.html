@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>three.js misc - lookAt</title>
 		<meta charset="utf-8">
+		<title>Blinkworld � Festival Novih Komunikacija</title>
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style>
 			body {
-				color: #404040;
+				color: #FFF;
 				font-family:Monospace;
 				font-size:13px;
 				text-align:center;
 
-				background-color: #ffffff;
+				background-color: #336699;
 				margin: 0px;
 				overflow: hidden;
 			}
@@ -24,114 +24,182 @@
 
 			a {
 
-				color: #0080bb;
+				color: #FFCC99;
 			}
+
+			#fullscreen {
+				position: absolute;
+				top: 50%;
+				left: 50%;
+				margin-top:-25px;
+				margin-left: -210px;
+				text-align: center;
+				font-size: 36px;
+				font-weight: bold;
+				color: white;
+				text-shadow: 2px 2px 0 black;
+				background-color: red;
+				padding: 5px 20px;
+				}
+
+			#fullscreen.hide { display:none; }
 		</style>
 	</head>
 	<body>
 		<div id="info"><a href="http://b-link.rs" target="_blank">Blinkworld</a> - Festival Novih Komunikacija</div>
+		<div id="fullscreen">KLIK ZA PUN EKRAN</div>
 
 		<script src="./js/lib/three.min.js"></script>
     <script src="./js/ball.js"></script>
+		<script src="./js/snowflake.js"></script>
+    <script src="js/lib/ColladaLoader.js"></script>
 
 		<script>
+			// Prelazak na pun ekran --------------------------------------------------------------------------------------------
+			var body = document.body;
+			body.onclick = requestFullScreen; // Slu�anje klika
 
-      var SHADOW_MAP_WIDTH = 4096, SHADOW_MAP_HEIGHT = 4096;
+			// Funkcija za prelazak na ceo ekran
+			function requestFullScreen() {
+				// Skrivanje teksta
+				document.getElementById('fullscreen').setAttribute('class', 'hide');
 
-			var container;
+				body.onclick = null;
+				var requestMethod = body.requestFullScreen || body.webkitRequestFullScreen || body.mozRequestFullScreen || body.msRequestFullScreen;
 
-			var camera, scene, light, renderer;
+				if (requestMethod) {
+					requestMethod.call(body);
+				}
+			}
 
-      var plane;
+			// Promena velicine ekrana
+			window.onresize = function() {
+				console.log('resized!');
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+			};
 
-      var balls = [];
 
-      var time;
 
-			init();
-			animate();
+			// TREE.JS primer ---------------------------------------------------------------------------------------------------
+			// Variable
+			var SHADOW_MAP_WIDTH = 1024, SHADOW_MAP_HEIGHT = 1024, SNOWFLAKE_LEN = 40, SNOWFLAKE_HEIGHT = 10;
+			var camera, scene, light, hemisphereLight, renderer;
+			var plane, cake;
+			var snowflake = [], logo;
+			var time;
 
+
+			init();		// Kreiranje scene i elemenata za scenu
+			animate();	// Animiranje elemenata na sceni
+
+
+			// Funkcija za kreiranje prostora za crtanje scene (<canvas>), scena, kamera, svetlo ...
 			function init() {
 
-				container = document.createElement( 'div' );
-				document.body.appendChild( container );
-
+				// Scene
 				scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2( 0xffffff, 0.02 );
+				scene.fog = new THREE.FogExp2( 0x336699, 0.02 ); // Magla za scenu
 
-        camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.001, 1500 );
+
+				// Kamera
+				camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 0.001, 1500 );
 				camera.position.z = 25;
-        camera.position.y = 2;
+				camera.position.y = 2;
 
-        light = new THREE.DirectionalLight( 0xffffff );
+
+				// Svetlo
+				light = new THREE.DirectionalLight( 0xffffff );
 				light.position.set( 1,1,1 );
 
-        light.castShadow = true;
 
-        light.shadowCameraNear = 1;
+				// Senka
+				light.castShadow = true;
+				light.shadowCameraNear = 1;
 				light.shadowCameraFar = 200;
 				light.shadowCameraFov = 10;
-
-        light.shadowCameraLeft = -35;
-        light.shadowCameraRight = 35;
-        light.shadowCameraTop = 35;
-        light.shadowCameraBottom = -35;
-
+				light.shadowCameraLeft = -35;
+				light.shadowCameraRight = 35;
+				light.shadowCameraTop = 35;
+				light.shadowCameraBottom = -35;
 				//light.shadowCameraVisible = true;
-
 				light.shadowBias = 0.0001;
 				light.shadowDarkness = 0.5;
-
 				light.shadowMapWidth = SHADOW_MAP_WIDTH;
 				light.shadowMapHeight = SHADOW_MAP_HEIGHT;
-        
-				scene.add( light );
+				scene.add( light );	// Dodavanje svetla na scenu
 
+        hemisphereLight = new THREE.HemisphereLight( 0x336699, 0x115522, 1 );
+        scene.add( hemisphereLight );
+
+
+
+				// Podloga
 				var planeGeo = new THREE.PlaneGeometry(100, 100, 100, 100);
-        var planeMat = new THREE.MeshLambertMaterial( { color: new THREE.Color( 0x999999) } );
-        plane = new THREE.Mesh( planeGeo, planeMat );
-        plane.castShadow = true;
-        plane.receiveShadow = true;
-        plane.rotation.x = -Math.PI/2;
-        scene.add(plane);
+				var planeMat = new THREE.MeshLambertMaterial( { color: new THREE.Color( 0x225533) } );
+				plane = new THREE.Mesh( planeGeo, planeMat );
+				plane.castShadow = true;
+				plane.receiveShadow = true;
+				plane.rotation.x = -Math.PI/2;
+				scene.add(plane);	// Dodavanje podloge na scenu
 
-        for(var i = 0; i<20; i++){
-          balls[i] = new Ball('images/blink.png', Math.random()+1, Math.random()*50-25, Math.random()*3, Math.random()*50-25);
-          scene.add(balls[i].mesh);
-        }
+        var loader = new THREE.ColladaLoader();
+        loader.options.convertUpAxis = true;
+        loader.load( './dae/cake.dae', function ( collada ) {
 
+          cake = collada.scene;
+
+          cake.scale.x = cake.scale.y = cake.scale.z = 0.1;
+          cake.updateMatrix();
+
+          scene.add(cake);
+
+        } );
+
+
+				// ELEMENTI
+				// Logo
+				logo = new Ball('./images/blink.png', 1, 0, 8, 0 );
+				scene.add(logo.mesh);
+
+				// Pahuljice
+				for(var i = 0; i<SNOWFLAKE_LEN; i++){
+					snowflake[i] = new Snowflake();
+					snowflake[i].resetPosition();
+					scene.add(snowflake[i].mesh);
+				}
+
+
+				// Render
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setSize( window.innerWidth, window.innerHeight );
-        renderer.setClearColor( scene.fog.color, 1 );
-        renderer.shadowMapEnabled = true;
+				renderer.setClearColor( scene.fog.color, 1 );
+				renderer.shadowMapEnabled = true;
 				renderer.shadowMapSoft = true;
-
-        container.appendChild( renderer.domElement );
-
-
+				document.body.appendChild( renderer.domElement );
 			}
-  
+
+
+
+			// Animiranje scene (elemenata na sceni)
 			function animate() {
+				// Trenutno vreme � neophodno za animiranje elemenata
+				time = new Date().getTime();
 
-        time = new Date().getTime();
+				// Animiranje svakog elementa pojedina�no
+				for(var i = 0; i<SNOWFLAKE_LEN; i++){
+					snowflake[i].update();
+				}
+				logo.update();
 
-				requestAnimationFrame( animate );
-
-        for(var i = 0; i<20; i++){
-          balls[i].update();
-        }
-
-				render();
-
-			}
-
-			function render() {
-
+				// Renderovanje scene (Iscrtavanje)
 				renderer.render( scene, camera );
 
+				// Ponovno pozivanje funkcije animate() kako bi se 
+				// non-stop ra�unale promene i ponovo iscrtavao frejm
+				requestAnimationFrame( animate );
 			}
-
 		</script>
-
 	</body>
 </html>

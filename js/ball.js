@@ -7,11 +7,13 @@
  */
 function Ball(tex, rad, x, y, z){
 
-  this.oscSpeed = Math.random()+0.5;
+  this.oscSpeed = Math.random();
   this.height = y;
 
   var ballGeo = new THREE.SphereGeometry( rad, 32, 32 );
   var ballMat = new THREE.MeshPhongMaterial( { map: THREE.ImageUtils.loadTexture( tex ) } );
+  ballMat.shininess = 24;
+  ballMat.specular = new THREE.Color( 0x666666 );
   this.mesh = new THREE.Mesh( ballGeo, ballMat );
 
   this.mesh.castShadow = true;
